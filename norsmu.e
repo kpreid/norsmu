@@ -94,6 +94,8 @@ def optParse(text :String, source :String) :nullOk[Term] {
   return filterTerminals(parserOutputToTerm(rawParse(false)))
 }
 
+println("Configuring")
+
 # !!! global state
 makeLojbanParser.setTerml(true)
 makeLojbanParser.setWhitespace(false)
@@ -106,6 +108,8 @@ def loadInitialSentences
 def [saveName, initServer, initNick] + initChannels := interp.getArgs()
 
 # --- 
+
+println("About to make surgeon")
 
 def saveFile := <file: saveName>
 def goodLoadFile := <file: saveName + "~">
@@ -231,6 +235,7 @@ def makeSentence(depth, maxDepth, ptag) {
 }
 
 def makeGoodSentence() {
+  println("entering makeGoodSentence")
   var sentence := null
   var tries := 0
   while ((sentence == null || sentence == "" || optParse(sentence, "loopback") == null) && tries < 10) {
@@ -370,6 +375,7 @@ def handler {
     if ((unknownMention || addressingMe.contains(context)) && optParsed != null) {
       println("handle: responding")
       bot.sendMessage(channel, makeGoodSentence())
+      println("handle: done responding")
     } else {
       println(`handle: not responding (nick=${bot.getNick()} parsed=${optParsed != null})`)
     }
