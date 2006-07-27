@@ -22,7 +22,6 @@ pragma.enable("dot-props")
 
 stderr.println("Loading")
 
-def makePircBot      := <unsafe:EPircBot>
 def makeLojbanParser := <unsafe:xtc.parser.PParser>
 def makeStringReader := <import:java.io.StringReader>
 def makeTextWriter   := <import:org.erights.e.elib.oldeio.TextWriter>
@@ -105,7 +104,7 @@ makeLojbanParser.setBlanks(false)
 
 def loadInitialSentences
 
-def [saveName, initServer, initNick] + initChannels := interp.getArgs()
+def [saveName] + modeArgs := interp.getArgs()
 
 # --- 
 
@@ -414,13 +413,55 @@ def handler {
   }
 }
 
-bind bot := makePircBot(handler, true, false)
+switch (modeArgs) {
+  match [initServer, initNick] + initChannels {
+    def makePircBot      := <unsafe:EPircBot>
 
-bot.setConnectName(initNick)
-bot.connect(initServer)
-for ch in initChannels {
-  bot.joinChannel(ch)
+    bind bot := makePircBot(handler, true, false)
+    
+    bot.setConnectName(initNick)
+    bot.connect(initServer)
+    for ch in initChannels {
+      bot.joinChannel(ch)
+    }
+    
+    interp.blockAtTop()
+    #bot
+  }
+  match [`-`] {
+    
+    bind bot {
+      to dispose() {}
+      to disconnect() {
+        interp.continueAtTop()
+      }
+      to sendMessage(who, what :String) {
+        stdout.println(what)
+      }
+    }
+    
+    def read :rcvr := <unsafe:org.erights.e.elib.vat.Vat>.make("headless", `stdin reader`).seed(thunk {
+      def stdin := <unsafe:org.erights.e.develop.exception.makePrintStreamWriter>.stdin()
+      def read() {
+        return stdin.readLine()
+      }
+    })
+    
+    def loop() {
+      when (read <- ()) -> got(line) {
+        if (line != null) { 
+          handler.onPrivateMessage("cusku", null, null, line)
+          loop()
+        } else {
+          interp.continueAtTop()
+        } 
+      } catch p {
+        interp.exitAtTop(p)
+      }
+    }
+    loop()
+    interp.blockAtTop()
+  }
 }
 
-interp.blockAtTop()
-#bot
+save() # will happen after the continueAtTop
