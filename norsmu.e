@@ -20,7 +20,7 @@ pragma.disable("explicit-result-guard")
 pragma.enable("accumulator")
 pragma.enable("dot-props")
 
-println("Loading")
+stderr.println("Loading")
 
 def makePircBot      := <unsafe:EPircBot>
 def makeLojbanParser := <unsafe:xtc.parser.PParser>
@@ -70,7 +70,7 @@ def optParse(text :String, source :String) :nullOk[Term] {
     def demorph := makeLojbanParser(makeStringReader(text), source + " morphology").pmorphology(0)
     
     if (!demorph.hasValue()) {
-      println("morphology stage admitted failure")
+      stderr.println("morphology stage admitted failure")
       return ""
     }
 
@@ -94,7 +94,7 @@ def optParse(text :String, source :String) :nullOk[Term] {
   return filterTerminals(parserOutputToTerm(rawParse(false)))
 }
 
-println("Configuring")
+stderr.println("Configuring")
 
 # !!! global state
 makeLojbanParser.setTerml(true)
@@ -109,14 +109,14 @@ def [saveName, initServer, initNick] + initChannels := interp.getArgs()
 
 # --- 
 
-println("About to make surgeon")
+stderr.println("About to make surgeon")
 
 def saveFile := <file: saveName>
 def goodLoadFile := <file: saveName + "~">
 
 def surgeon := makeSurgeon()
 
-println("Reviving")
+stderr.println("Reviving")
 def modelFlex := {
   if (saveFile.exists()) {
     def data := surgeon.unserialize(saveFile.getBytes())
@@ -133,14 +133,14 @@ def modelFlex := {
 }
 
 def save() {
-  print("Serializing...")
+  stderr.print("Serializing...")
   saveFile.setBytes(surgeon.serialize(modelFlex))
   #saveFile.setText(E.toQuote(modelFlex))
-  println("done")
+  stderr.println("done")
 }
 
 timer.every(1000 * 60 * 60 * 72, def saveTickReactor(_) {
-  print("(Timed) ")
+  stderr.print("(Timed) ")
   save()
 }).start()
 
@@ -201,7 +201,7 @@ def makeSentence(depth, maxDepth, ptag) {
   }
 
   def depti := depth + 1
-  #println("| " + " " * depth + `$ptag`)
+  #stderr.println("| " + " " * depth + `$ptag`)
   switch (ptag) {
     match x :String { 
       return x + " " 
@@ -235,15 +235,15 @@ def makeSentence(depth, maxDepth, ptag) {
 }
 
 def makeGoodSentence() {
-  println("entering makeGoodSentence")
+  stderr.println("entering makeGoodSentence")
   var sentence := null
   var tries := 0
   while ((sentence == null || sentence == "" || optParse(sentence, "loopback") == null) && tries < 10) {
-    print("-")
+    stderr.print("-")
     sentence := makeSentence(1, 30, term`text`.getTag())
     tries += 1
   }
-  println("> " + sentence)
+  stderr.println("> " + sentence)
   return sentence
 }
 
@@ -251,7 +251,7 @@ def addUtterance(text, mayPrint) {
   def parsed := optParse(text, "")
   if (parsed != null) {
     if (mayPrint) {
-      println(parsed.asText())
+      stderr.println(parsed.asText())
     }
     addToModel(parsed, 1)
   }
@@ -260,7 +260,7 @@ def addUtterance(text, mayPrint) {
 # --- 
 
 bind loadInitialSentences() {
-  println("loadInitialSentences start")
+  stderr.println("loadInitialSentences start")
 
   def [head, var resolver] := Ref.promise()
   head <- ()
@@ -278,11 +278,11 @@ bind loadInitialSentences() {
           match `@t -- GOOD` { t }
           match _ { line }
         }
-        println(`Init: $utterance`)
+        stderr.println(`Init: $utterance`)
         try {
           addUtterance(utterance, false)
         } catch p {
-          println(`  $p`)
+          stderr.println(`  $p`)
           throw(p) # goes to tracelog
         }
       }
@@ -295,16 +295,16 @@ bind loadInitialSentences() {
   
   resolver.resolve(thunk {})
   
-  println("loadInitialSentences end")
+  stderr.println("loadInitialSentences end")
 }
 
 # ---
 
 if (false) {
   for k => v in modelFlex {
-    println(`$k =>`)
+    stderr.println(`$k =>`)
     for vv in v {
-      println(`        $vv`)
+      stderr.println(`        $vv`)
     }
   }
 }
@@ -342,29 +342,29 @@ def handler {
     
     if (optParsed =~ parsed :notNull) {
       # XXX refactor - e.g. we're duplicating some of addUtterance, and have lots of duplicate code in matching selbri
-      println(parsed.asText())
+      stderr.println(parsed.asText())
       addToModel(parsed, 1)
       
       if (parsed =~ termSearch`free(vocative(COI(@{s :String ? ["ju'i", "re'i"].contains(s)}), NAI("nai"), DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
-        println(`addr- $context: ju'inai`)
+        stderr.println(`addr- $context: ju'inai`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
       } else if (parsed =~ termSearch`free(vocative(COI(@{s :String ? ["fe'o", "co'o"].contains(s)}), DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
-        println(`addr- $context: fe'o`)
+        stderr.println(`addr- $context: fe'o`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
       } else if (parsed =~ termSearch`free(vocative(COI?, NAI?, DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
-        println(`addr+ $context: naming us`)
+        stderr.println(`addr+ $context: naming us`)
         if (!addressingMe.contains(context)) {
           bot <- sendMessage(channel, "re'i " + sender) # cheap defer till after regular msg
           addressingMe with= context
         }
       } else if (parsed =~ termSearch`free(vocative(COI(@{s ? (s != "mi'e")})?, DOI?), @_+, DOhU?)`) {
-        println(`addr- $context: doi da poi na du mi`)
+        stderr.println(`addr- $context: doi da poi na du mi`)
         # vocative with some name/sumti, but not us (earlier cases would catch it)
         addressingMe without= context
       } else {
@@ -373,11 +373,11 @@ def handler {
     }
     
     if ((unknownMention || addressingMe.contains(context)) && optParsed != null) {
-      println("handle: responding")
+      stderr.println("handle: responding")
       bot.sendMessage(channel, makeGoodSentence())
-      println("handle: done responding")
+      stderr.println("handle: done responding")
     } else {
-      println(`handle: not responding (nick=${bot.getNick()} parsed=${optParsed != null})`)
+      stderr.println(`handle: not responding (nick=${bot.getNick()} parsed=${optParsed != null})`)
     }
   }
 
@@ -396,7 +396,7 @@ def handler {
       
       if (optParsed =~ parsed :notNull) {
         # XXX refactor - e.g. we're duplicating some of addUtterance.
-        println(parsed.asText())
+        stderr.println(parsed.asText())
         addToModel(parsed, 1)
         bot.sendMessage(sender, makeGoodSentence())
       } else {
@@ -409,7 +409,7 @@ def handler {
   }
 
   match x {
-    # println(`handler ignoring: $x`)
+    # stderr.println(`handler ignoring: $x`)
     null
   }
 }
