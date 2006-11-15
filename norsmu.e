@@ -319,10 +319,12 @@ var addressingMe := [].asSet()
 
 def bot
 
+def dohuHack := [[term`DOhU("do'u")`], []].asSet()
+
 def isMyName(terms) {
   return switch (terms) {
-    match [term`selbri(selbri1(selbri2(selbri3(selbri4(selbri5(selbri6(tanruUnit(tanruUnit1(tanruUnit2(BRIVLA(.String.${bot.getNick()}, @_*)))))))))))`] { true }
-    match [term`sumti(sumti1(sumti2(sumti3(sumti4(sumti5(sumti6(LAClause(LAPre(LA(CMAVO(LA( "la" ))))), sumtiTail(sumtiTail1(@{selbri ? isMyName([selbri])})))))))))`] { true }
+    match [term`selbri(selbri1(selbri2(selbri3(selbri4(selbri5(selbri6(tanruUnit(tanruUnit1(tanruUnit2(BRIVLA(.String.${bot.getNick()}, @_*)))))))))))`] + rest ? dohuHack.contains(rest) { true }
+    match [term`sumti(sumti1(sumti2(sumti3(sumti4(sumti5(sumti6(LAClause(LAPre(LA(CMAVO(LA( "la" ))))), sumtiTail(sumtiTail1(@{selbri ? isMyName([selbri])})))))))))`] + rest ? dohuHack.contains(rest) { true }
     match _ { false }
   }
 }
