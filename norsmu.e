@@ -110,8 +110,8 @@ def [saveName] + modeArgs := interp.getArgs()
 
 stderr.println("About to make surgeon")
 
-def saveFile := <file: saveName>
-def goodLoadFile := <file: saveName + "~">
+def saveFile := <file>[saveName]
+def goodLoadFile := <file>[saveName + "~"]
 
 def surgeon := makeSurgeon()
 
