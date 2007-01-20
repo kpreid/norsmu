@@ -22,11 +22,11 @@ pragma.enable("dot-props")
 
 stderr.println("Loading")
 
-def makeLojbanParser := <unsafe:xtc.parser.PParser>
-def makeStringReader := <import:java.io.StringReader>
-def makeTextWriter   := <import:org.erights.e.elib.oldeio.TextWriter>
-def termParser       := <import:org.quasiliteral.term.TermParser>
-def makeTerm         := <import:org.quasiliteral.term.Term>
+def makeLojbanParser := <unsafe:xtc.parser.makePParser>
+def makeStringReader := <import:java.io.makeStringReader>
+def makeTextWriter   := <import:org.erights.e.elib.oldeio.makeTextWriter>
+def termParser       := <import:org.quasiliteral.term.makeTermParser>
+def makeTerm         := <import:org.quasiliteral.term.makeTerm>
 def Term             := <type:org.quasiliteral.term.Term>
 def makeSurgeon      := <elib:serial.makeSurgeon>
 
