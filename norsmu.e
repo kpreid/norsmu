@@ -323,8 +323,8 @@ def dohuHack := [[term`DOhU("do'u")`], []].asSet()
 
 def isMyName(terms) {
   return switch (terms) {
-    match [term`selbri(selbri1(selbri2(selbri3(selbri4(selbri5(selbri6(tanruUnit(tanruUnit1(tanruUnit2(BRIVLA(.String.${bot.getNick()}, @_*)))))))))))`] + rest ? dohuHack.contains(rest) { true }
-    match [term`sumti(sumti1(sumti2(sumti3(sumti4(sumti5(sumti6(LAClause(LAPre(LA(CMAVO(LA( "la" ))))), sumtiTail(sumtiTail1(@{selbri ? isMyName([selbri])})))))))))`] + rest ? dohuHack.contains(rest) { true }
+    match [term`selbri(selbri1(selbri2(selbri3(selbri4(selbri5(selbri6(tanruUnit(tanruUnit1(tanruUnit2(BRIVLA(.String.${bot.getNick()}, @_*)))))))))))`] + rest ? (dohuHack.contains(rest)) { true }
+    match [term`sumti(sumti1(sumti2(sumti3(sumti4(sumti5(sumti6(LAClause(LAPre(LA(CMAVO(LA( "la" ))))), sumtiTail(sumtiTail1(@{selbri ? (isMyName([selbri]))})))))))))`] + rest ? (dohuHack.contains(rest)) { true }
     match _ { false }
   }
 }
@@ -346,19 +346,19 @@ def handler {
       stderr.println(parsed.asText())
       addToModel(parsed, 1)
       
-      if (parsed =~ termSearch`free(vocative(COI(@{s :String ? ["ju'i", "re'i"].contains(s)}), NAI("nai"), DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
+      if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["ju'i", "re'i"].contains(s))}), NAI("nai"), DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
         stderr.println(`addr- $context: ju'inai`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
-      } else if (parsed =~ termSearch`free(vocative(COI(@{s :String ? ["fe'o", "co'o"].contains(s)}), DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
+      } else if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["fe'o", "co'o"].contains(s))}), DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
         stderr.println(`addr- $context: fe'o`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
-      } else if (parsed =~ termSearch`free(vocative(COI?, NAI?, DOI?), @{nameTerms ? isMyName(nameTerms)}*, DOhU?)`) {
+      } else if (parsed =~ termSearch`free(vocative(COI?, NAI?, DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
         stderr.println(`addr+ $context: naming us`)
         if (!addressingMe.contains(context)) {
           bot <- sendMessage(channel, "re'i " + sender) # cheap defer till after regular msg
