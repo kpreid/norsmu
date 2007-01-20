@@ -171,7 +171,7 @@ def addToModel(text, depth) {
   var reject := false
   
   def args := accum [] for a in text.getArgs() { _.with(
-    if (text =~ term`CMENE`) {
+    if (text =~ term`CMENE(*)`) {
       reject := true
     } else if (a =~ term`.String.`) {
       a.getOptData()
@@ -346,25 +346,25 @@ def handler {
       stderr.println(parsed.asText())
       addToModel(parsed, 1)
       
-      if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["ju'i", "re'i"].contains(s))}), NAI("nai"), DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
+      if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["ju'i", "re'i"].contains(s))}), NAI("nai"), DOI(*)?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
         stderr.println(`addr- $context: ju'inai`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
-      } else if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["fe'o", "co'o"].contains(s))}), DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
+      } else if (parsed =~ termSearch`free(vocative(COI(@{s :String ? (["fe'o", "co'o"].contains(s))}), DOI(*)?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU(*)?)`) {
         stderr.println(`addr- $context: fe'o`)
         if (addressingMe.contains(context)) {
           bot.sendMessage(channel, "fe'o " + sender)
           addressingMe without= context
         }
-      } else if (parsed =~ termSearch`free(vocative(COI?, NAI?, DOI?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU?)`) {
+      } else if (parsed =~ termSearch`free(vocative(COI(*)?, NAI(*)?, DOI(*)?), @{nameTerms ? (isMyName(nameTerms))}*, DOhU(*)?)`) {
         stderr.println(`addr+ $context: naming us`)
         if (!addressingMe.contains(context)) {
           bot <- sendMessage(channel, "re'i " + sender) # cheap defer till after regular msg
           addressingMe with= context
         }
-      } else if (parsed =~ termSearch`free(vocative(COI(@{s ? (s != "mi'e")})?, DOI?), @_+, DOhU?)`) {
+      } else if (parsed =~ termSearch`free(vocative(COI(@{s ? (s != "mi'e")})?, DOI(*)?), @_+, DOhU(*)?)`) {
         stderr.println(`addr- $context: doi da poi na du mi`)
         # vocative with some name/sumti, but not us (earlier cases would catch it)
         addressingMe without= context
