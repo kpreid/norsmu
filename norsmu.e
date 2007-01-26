@@ -14,8 +14,7 @@
 # rune -J-XX:ThreadStackSize=10240 -cpa ~/d/lojban/lib/lojban_peg_parser.jar -cpa /Stuff/pircbot.jar -cpa /Stuff/jlib/ norsmu.e irc.freenode.net norsum \#jbokaj
 
 
-pragma.enable("easy-return")
-pragma.disable("explicit-result-guard")
+pragma.syntax("0.9")
 
 pragma.enable("accumulator")
 pragma.enable("dot-props")
@@ -188,9 +187,9 @@ def addToModel(text, depth) {
   for vary in (-2..2) + depth {  
     def production := [text.getTag(), vary]
 
-    def prodModelFlex := modelFlex.fetch(production, thunk{modelFlex[production] := [].asMap().diverge()})
+    def prodModelFlex := modelFlex.fetch(production, fn{modelFlex[production] := [].asMap().diverge()})
     
-    prodModelFlex[args] := prodModelFlex.fetch(args, thunk{0}) + 1
+    prodModelFlex[args] := prodModelFlex.fetch(args, fn{0}) + 1
   }
 }
 
@@ -207,7 +206,7 @@ def makeSentence(depth, maxDepth, ptag) {
     }
     match _ {
       def production := [ptag, depth]
-      def choiceFreq := modelFlex.fetch(production, thunk{ return E.toString(production) + " " })
+      def choiceFreq := modelFlex.fetch(production, fn{ return E.toString(production) + " " })
 
       def total := accum 0 for v in choiceFreq { _ + v }
       
@@ -268,7 +267,7 @@ bind loadInitialSentences() {
   
     def [next, tailResolver] := Ref.promise()
 
-    resolver.resolve(thunk {
+    resolver.resolve(fn {
       next <- ()
       escape skip {
         def utterance := switch (line) {
@@ -292,7 +291,7 @@ bind loadInitialSentences() {
     
   }
   
-  resolver.resolve(thunk {})
+  resolver.resolve(fn {})
   
   stderr.println("loadInitialSentences end")
 }
@@ -442,7 +441,7 @@ switch (modeArgs) {
       }
     }
     
-    def read :rcvr := <unsafe:org.erights.e.elib.vat.Vat>.make("headless", `stdin reader`).seed(thunk {
+    def read :rcvr := <unsafe:org.erights.e.elib.vat.Vat>.make("headless", `stdin reader`).seed(fn {
       def stdin := <unsafe:org.erights.e.develop.exception.makePrintStreamWriter>.stdin()
       def read() {
         return stdin.readLine()
@@ -450,7 +449,7 @@ switch (modeArgs) {
     })
     
     def loop() {
-      when (read <- ()) -> got(line) {
+      when (def line := read <- ()) -> {
         if (line != null) { 
           handler.onPrivateMessage("cusku", null, null, line)
           loop()
