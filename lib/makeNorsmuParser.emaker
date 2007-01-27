@@ -1,0 +1,86 @@
+# Copyright 2004-2007 Kevin Reid.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+pragma.syntax("0.9")
+
+pragma.enable("accumulator")
+pragma.enable("dot-props")
+
+def makeStringReader := <import:java.io.makeStringReader>
+def makeTextWriter   := <import:org.erights.e.elib.oldeio.makeTextWriter>
+def termParser       := <import:org.quasiliteral.term.makeTermParser>
+def makeTerm         := <import:org.quasiliteral.term.makeTerm>
+def Term             := <type:org.quasiliteral.term.Term>
+
+def makeNorsmuParser(makeLojbanParser) {
+  def filterTerminals(term :Term) {
+    if (term.getTag().getTagName() =~ `@{kind}Clause` &&
+          term =~ term`${`${kind}Clause`}(
+                    ${`${kind}Pre`}(
+                      $kind(@_(@_(@{text :String})))))`) {
+      return term`$kind(.String.$text)`
+    } else if (term.getTag().getTagName() =~ `@{kind}Clause` &&
+          term =~ term`${`${kind}Clause`}(
+                    ${`${kind}Pre`}(
+                      $kind(@_(@_(@{text :String})))),
+                    ${`${kind}Post`}(
+                      @postElems*))`) {
+      return term`$kind(.String.$text, $postElems*)`
+    } else {
+      return makeTerm(term.getTag(), term.getOptData(), term.getOptSpan(), 
+        accum [] for sub in term.getArgs() {
+          _.with(filterTerminals(sub))
+        })
+    }
+  }
+
+  def parserOutputToTerm(ptext) :any {
+    return termParser("text(" + ptext + ")")
+  }
+
+
+  return def norsmuParser {
+    to run(text :String, source :String) :nullOk[Term] {
+      def rawParse(blanks) {
+        makeLojbanParser::whitespace := false
+        makeLojbanParser::parserParens := false
+        makeLojbanParser::pretty := false
+        makeLojbanParser::text := false
+        makeLojbanParser::latex := false
+
+        makeLojbanParser::blanks := false
+        makeLojbanParser::terml := false
+        makeLojbanParser::verbose := true
+        def demorph := makeLojbanParser(makeStringReader(text), source + " morphology").pmorphology(0)
+
+        if (!demorph.hasValue()) {
+          throw <- ("morphology stage admitted failure for: " + text)
+          return ""
+        }
+
+        var dmfinal := demorph.semanticValue().replaceAll("Morph=(", "=(")
+
+        #if (dmfinal =~ ` text=( @s ) `) {
+        #  dmfinal := s
+        #}
+
+        makeLojbanParser::blanks := blanks
+        makeLojbanParser::terml := true
+        makeLojbanParser::verbose := false
+
+        return makeLojbanParser.finalMakeString(makeLojbanParser(makeStringReader(dmfinal), source + " grammar").ptext(0).semanticValue())
+      }
+
+      if (rawParse(true).indexOf("EOF") == -1) {
+        return null
+      }
+
+      return filterTerminals(parserOutputToTerm(rawParse(false)))
+    }
+  }
+}

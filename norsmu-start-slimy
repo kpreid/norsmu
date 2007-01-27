@@ -1,2 +1,2 @@
 #!/bin/sh
-screen -S norsmu rune -cpa jlib -cpa jlib/lojban_peg_parser.jar -cpa jlib/pircbot.jar -J-Xmx800m -J-XX:ThreadStackSize=10240 bin/norsmu.e norsmu.de chat.freenode.net norsmu \#lojban \#jbokaj
+screen -S norsmu rune -cpa jlib -cpa jlib/lojban_peg_parser.jar -cpa jlib/pircbot.jar -cpb lib -J-Xmx800m -J-XX:ThreadStackSize=10240 bin/norsmu.e norsmu.de chat.freenode.net norsmu \#lojban \#jbokaj

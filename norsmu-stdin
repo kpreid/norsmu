@@ -1,1 +1,1 @@
-rune -cpa lojban_peg_parser.jar -J-Xmx800m -J-XX:ThreadStackSize=10240 norsmu.e norsmu-local.de -
+rune -cpa lojban_peg_parser.jar -cpb lib -J-Xmx800m -J-XX:ThreadStackSize=10240 norsmu.e norsmu-local.de -

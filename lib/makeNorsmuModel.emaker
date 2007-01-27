@@ -1,0 +1,111 @@
+# Copyright 2004-2007 Kevin Reid.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+pragma.syntax("0.9")
+pragma.enable("accumulator")
+
+def Term             := <type:org.quasiliteral.term.Term>
+
+def FlexMap := <elib:tables.FlexMap>.asType()
+
+def makeNorsmuModel {
+  to run(table :FlexMap, optParse, entropy, stderr) {
+    def addToModel(text, depth) {
+      var reject := false
+
+      def args := accum [] for a in text.getArgs() { _.with(
+        if (text =~ term`CMENE(*)`) {
+          reject := true
+        } else if (a =~ term`.String.`) {
+          a.getOptData()
+        } else {
+          addToModel(a, depth + 1)
+          a.getTag()
+        }
+      ) }
+
+      if (reject) {
+        return
+      }
+
+      for vary in (-2..2) + depth {  
+        def production := [text.getTag(), vary]
+
+        def prodModelFlex := table.fetch(production, fn{table[production] := [].asMap().diverge()})
+
+        prodModelFlex[args] := prodModelFlex.fetch(args, fn{0}) + 1
+      }
+    }
+
+    def makeSentence(depth, maxDepth, ptag) {
+      if (depth > maxDepth) {
+        return null
+      }
+
+      def depti := depth + 1
+      #stderr.println("| " + " " * depth + `$ptag`)
+      switch (ptag) {
+        match x :String { 
+          return x + " " 
+        }
+        match _ {
+          def production := [ptag, depth]
+          def choiceFreq := table.fetch(production, fn{ return E.toString(production) + " " })
+
+          def total := accum 0 for v in choiceFreq { _ + v }
+
+          def pickedFIndex := entropy.nextInt(total)
+
+          var runningOffset := 0
+          def pickedSyms :notNull := for syms => freq in choiceFreq { 
+            runningOffset += freq
+            if (pickedFIndex < runningOffset) {
+              break syms
+            }
+          }
+
+          #for syms in choices.sort(def randomCompFunc(_, _) {return entropy.nextInt(3) - 1}) {
+            return accum "" for sym in pickedSyms { _ + if (makeSentence(depti, maxDepth, sym) =~ sent :notNull) { sent } else { 
+              continue
+              #return null
+            } }
+          #}
+
+          return null
+        }
+      }
+    }
+
+    def makeGoodSentence() {
+      stderr.println("entering makeGoodSentence")
+      var sentence := null
+      var tries := 0
+      while ((sentence == null || sentence == "" || optParse(sentence, "loopback") == null) && tries < 10) {
+        stderr.print("-")
+        sentence := makeSentence(1, 30, term`text`.getTag())
+        tries += 1
+      }
+      stderr.println("> " + sentence)
+      return sentence
+    }
+
+    return def norsmuModel {
+      to put(sentence :Term) { addToModel(sentence, 1) }
+      to getData() { return table }
+      to makeSentenceText() { return makeGoodSentence() }
+      to show(out) {
+        for k => v in table {
+          out.println(`$k =>`)
+          for vv in v {
+            out.println(`        $vv`)
+          }
+        }
+      }
+    }
+  }
+}
