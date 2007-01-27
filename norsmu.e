@@ -35,43 +35,53 @@ stderr.println("Configuring")
 
 # --- 
 
-def [saveName] + modeArgs := interp.getArgs()
-
+def [saveName, modeArgs] := switch (interp.getArgs()) {
+  match [`--save`, s] + m { [s,    m] }
+  match                 m { [null, m] }
+}
 # --- 
 
 stderr.println("About to make surgeon")
 
-def saveFile := <file>[saveName]
-def goodLoadFile := <file>[saveName + "~"]
+def [save, modelStore] := if (saveName != null) {
+  def saveFile := <file>[saveName]
+  def goodLoadFile := <file>[saveName + "~"]
 
-def surgeon := makeSurgeon()
+  def surgeon := makeSurgeon()
 
-stderr.println("Reviving")
-def model := makeNorsmuModel({
-  if (saveFile.exists()) {
-    def data := surgeon.unserialize(saveFile.getBytes())
-    #def data := e__quasiParser(saveFile.getText()).eval(safeScope)
-    saveFile.renameTo(goodLoadFile, null)
-    data
-  } else if (goodLoadFile.exists()) {
-    #e__quasiParser(saveFile.getText()).eval(safeScope)
-    surgeon.unserialize(goodLoadFile.getBytes())
-  } else {
-    [].asMap().diverge()
+  stderr.println("Reviving")
+  def modelStore := {
+    if (saveFile.exists()) {
+      def data := surgeon.unserialize(saveFile.getBytes())
+      #def data := e__quasiParser(saveFile.getText()).eval(safeScope)
+      saveFile.renameTo(goodLoadFile, null)
+      data
+    } else if (goodLoadFile.exists()) {
+      #e__quasiParser(saveFile.getText()).eval(safeScope)
+      surgeon.unserialize(goodLoadFile.getBytes())
+    } else {
+      [].asMap().diverge()
+    }
   }
-}, optParse, entropy, stderr)
 
-def save() {
-  stderr.print("Serializing...")
-  saveFile.setBytes(surgeon.serialize(model.getData()))
-  #saveFile.setText(E.toQuote(modelFlex))
-  stderr.println("done")
+  def save() {
+    stderr.print("Serializing...")
+    saveFile.setBytes(surgeon.serialize(modelStore))
+    #saveFile.setText(E.toQuote(modelFlex))
+    stderr.println("done")
+  }
+
+  timer.every(1000 * 60 * 60 * 72, def saveTickReactor(_) {
+    stderr.print("(Timed) ")
+    save()
+  }).start()
+  
+  [save, modelStore]
+} else {
+  [def stubSave() {}, [].asMap().diverge()]
 }
 
-timer.every(1000 * 60 * 60 * 72, def saveTickReactor(_) {
-  stderr.print("(Timed) ")
-  save()
-}).start()
+def model := makeNorsmuModel(modelStore, optParse, entropy, stderr)
 
 # ---
 
