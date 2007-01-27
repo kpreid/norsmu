@@ -129,7 +129,58 @@ def model := makeNorsmuModel(modelStore, optParse, entropy, stderr)
 
 # ---
 
+def makeStdinReader() {
+  return <unsafe:org.erights.e.elib.vat.Vat>.make("headless", `stdin reader`).seed(fn {
+    def stdin := <unsafe:org.erights.e.develop.exception.makePrintStreamWriter>.stdin()
+    def read() {
+      return stdin.readLine()
+    }
+  })
+}
+
+def readLoop(handler, done) {
+  def read :rcvr := makeStdinReader()
+  
+  def loop() {
+    when (def line := read <- ()) -> {
+      if (line != null) { 
+        handler(line)
+        loop()
+      } else {
+        done()
+        interp.continueAtTop()
+      } 
+    } catch p {
+      interp.exitAtTop(p)
+    }
+  }
+  loop()
+  interp.blockAtTop()
+}
+
 switch (modeArgs) {
+  match [`-`] {
+    
+    def converser := makeNorsmuConverser(model, fn{ "norsmu" }, stderr, optParse)
+    readLoop(fn line {
+      converser."private"(optParse(line, "-"), fn m { stdout.println(m) })
+    }, fn {})
+  }
+  
+  match [`--batch`, countText] {
+    def count := __makeInt(countText)
+
+    readLoop(fn line {
+      if (optParse(line, "-") =~ parsed :notNull) {
+        model.put(parsed)
+      } else {
+        stderr.println(`Skipping unparsable: $line`)
+      }
+    }, fn {
+      for _ in 1..count { stdout.println(model.makeSentenceText()) }
+    })    
+  }
+
   match [initServer, initNick] + initChannels {
     def makePircBot      := <unsafe:EPircBot>
 
@@ -177,32 +228,6 @@ switch (modeArgs) {
     
     interp.blockAtTop()
     #bot
-  }
-  match [`-`] {
-    
-    def converser := makeNorsmuConverser(model, fn{ "norsmu" }, stderr, optParse)
-
-    def read :rcvr := <unsafe:org.erights.e.elib.vat.Vat>.make("headless", `stdin reader`).seed(fn {
-      def stdin := <unsafe:org.erights.e.develop.exception.makePrintStreamWriter>.stdin()
-      def read() {
-        return stdin.readLine()
-      }
-    })
-    
-    def loop() {
-      when (def line := read <- ()) -> {
-        if (line != null) { 
-          converser."private"(optParse(line, "-"), fn m { stdout.println(m) })
-          loop()
-        } else {
-          interp.continueAtTop()
-        } 
-      } catch p {
-        interp.exitAtTop(p)
-      }
-    }
-    loop()
-    interp.blockAtTop()
   }
 }
 
