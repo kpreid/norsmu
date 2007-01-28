@@ -181,7 +181,9 @@ switch (args) {
 
     readLoop(fn line {
       if (optParse(line, "-") =~ parsed :notNull) {
+        stderr.print(".")
         model.put(parsed)
+        stderr.print(",")
       } else {
         stderr.println(`Skipping unparsable: $line`)
       }
