@@ -35,10 +35,19 @@ stderr.println("Configuring")
 
 # --- 
 
-def [saveName, modeArgs] := switch (interp.getArgs()) {
-  match [`--save`, s] + m { [s,    m] }
-  match                 m { [null, m] }
+var variance := -2..2
+var saveName := null
+var args := interp.getArgs()
+
+while (true) {
+  switch (args) {
+    match [`--save`, s] + m { saveName := s; args := m }
+    match [`--variance`, `@a..@b`] + m { variance := __makeInt(a) .. __makeInt(b); args := m }
+    match [`--variance`] + _ { throw(`Usage: --variance N..M`) }
+    match _ { break }
+  }
 }
+
 # --- 
 
 stderr.println("About to make surgeon")
@@ -81,7 +90,7 @@ def [save, modelStore] := if (saveName != null) {
   [def stubSave() {}, [].asMap().diverge()]
 }
 
-def model := makeNorsmuModel(modelStore, optParse, entropy, stderr)
+def model := makeNorsmuModel(modelStore, optParse, entropy, stderr, variance)
 
 # ---
 
@@ -158,7 +167,7 @@ def readLoop(handler, done) {
   interp.blockAtTop()
 }
 
-switch (modeArgs) {
+switch (args) {
   match [`-`] {
     
     def converser := makeNorsmuConverser(model, fn{ "norsmu" }, stderr, optParse)

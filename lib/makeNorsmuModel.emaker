@@ -14,7 +14,7 @@ def Term             := <type:org.quasiliteral.term.Term>
 def FlexMap := <elib:tables.FlexMap>.asType()
 
 def makeNorsmuModel {
-  to run(table :FlexMap, optParse, entropy, stderr) {
+  to run(table :FlexMap, optParse, entropy, stderr, variance) {
     def addToModel(text, depth) {
       var reject := false
 
@@ -33,7 +33,7 @@ def makeNorsmuModel {
         return
       }
 
-      for vary in (-2..2) + depth {  
+      for vary in variance + depth {  
         def production := [text.getTag(), vary]
 
         def prodModelFlex := table.fetch(production, fn{table[production] := [].asMap().diverge()})
