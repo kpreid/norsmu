@@ -18,7 +18,10 @@ def makeTerm         := <import:org.quasiliteral.term.makeTerm>
 def Term             := <type:org.quasiliteral.term.Term>
 
 def makeNorsmuParser(makeLojbanParser) {
-  def filterTerminals(term :Term) {
+  def filterTerminals(term :nullOk[Term]) {
+    if (term == null) {
+      return null
+    }
     if (term.getTag().getTagName() =~ `@{kind}Clause` &&
           term =~ term`${`${kind}Clause`}(
                     ${`${kind}Pre`}(
@@ -40,7 +43,7 @@ def makeNorsmuParser(makeLojbanParser) {
   }
 
   def parserOutputToTerm(ptext) :any {
-    return termParser("text(" + ptext + ")")
+    return try { termParser("text(" + ptext + ")") } catch p { null }
   }
 
 
